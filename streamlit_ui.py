@@ -3,14 +3,12 @@ import json
 import os
 from verify_all import verify_id_and_face
 
-# App config
 st.set_page_config(
     page_title="LioraTech Light — ID Verification",
     page_icon="🪪",
     layout="centered"
 )
 
-# Logo + Title
 col1, col2 = st.columns([1, 4])
 with col1:
     st.image("logo.png", width=80)
@@ -20,16 +18,21 @@ with col2:
 
 st.markdown("---")
 
-# Upload section
-st.markdown("### 📤 Upload ID + Selfie")
+st.markdown("### 📤 Upload or Capture ID")
 id_file = st.file_uploader("Upload ID image", type=["jpg", "jpeg", "png"])
+if not id_file:
+    id_file = st.camera_input("Or take a photo of your ID")
+
+st.markdown("### 🤳 Upload or Capture Selfie")
 selfie_file = st.file_uploader("Upload selfie image", type=["jpg", "jpeg", "png"])
+if not selfie_file:
+    selfie_file = st.camera_input("Or take a selfie")
 
 if id_file and selfie_file:
     with open("temp_id.jpg", "wb") as f:
-        f.write(id_file.read())
+        f.write(id_file.getbuffer())
     with open("temp_selfie.jpg", "wb") as f:
-        f.write(selfie_file.read())
+        f.write(selfie_file.getbuffer())
 
     with st.spinner("Running verification..."):
         result = verify_id_and_face("temp_id.jpg", "temp_selfie.jpg")
