@@ -1,3 +1,5 @@
+# Updated version using Rekognition OCR
+
 import os
 import re
 import json
@@ -80,3 +82,4 @@ if __name__ == "__main__":
     for k, v in result.items():
         print(f"{k}: {v}")
     print("✅ Saved JSON to verification_result.json")
+
