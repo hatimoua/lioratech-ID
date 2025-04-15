@@ -76,7 +76,7 @@ def verify_id_and_face(id_image, selfie_image):
     upload_to_s3(selfie_image, BUCKET_NAME, os.path.basename(selfie_image))
     upload_to_s3(result_json_path, BUCKET_NAME, result_json_path)
 
-    # Include pre-signed URL
+    # Add pre-signed S3 link to result
     result["s3_result_url"] = generate_presigned_url(BUCKET_NAME, result_json_path)
 
     return result
