@@ -1,11 +1,10 @@
-# Updated version using Rekognition OCR
-
 import os
 import re
 import json
 from PIL import Image
 import boto3
 from dotenv import load_dotenv
+from s3_utils import upload_image_to_s3
 
 load_dotenv()
 
@@ -60,10 +59,18 @@ def verify_id_and_face(id_image, selfie_image):
 
     verdict = "PASS" if face_result["score"] >= 90 else "REVIEW" if face_result["score"] >= 80 else "FAIL"
 
+    # Upload to S3 and get URLs
+    with open(id_image, "rb") as f:
+        id_url = upload_image_to_s3(f.read())
+    with open(selfie_image, "rb") as f:
+        selfie_url = upload_image_to_s3(f.read())
+
     result = {
         **fields,
         "Face Match Score": round(face_result["score"], 2),
-        "Verdict": verdict
+        "Verdict": verdict,
+        "ID Image URL": id_url,
+        "Selfie Image URL": selfie_url
     }
 
     with open("verification_result.json", "w") as f:
