@@ -83,3 +83,25 @@ if __name__ == "__main__":
     for k, v in result.items():
         print(f"{k}: {v}")
     print("✅ Saved JSON to verification_result.json")
+
+def compare_faces(source_image_path, target_image_path, threshold=90):
+    try:
+        with open(source_image_path, "rb") as src:
+            source_bytes = src.read()
+        with open(target_image_path, "rb") as tgt:
+            target_bytes = tgt.read()
+
+        response = rekognition.compare_faces(
+            SourceImage={'Bytes': source_bytes},
+            TargetImage={'Bytes': target_bytes},
+            SimilarityThreshold=threshold
+        )
+
+        if response['FaceMatches']:
+            similarity = response['FaceMatches'][0]['Similarity']
+            return {"match": True, "score": similarity}
+        else:
+            return {"match": False, "score": 0}
+    
+    except Exception as e:
+        return {"match": False, "score": 0, "error": str(e)}

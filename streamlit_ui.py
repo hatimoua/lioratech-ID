@@ -56,3 +56,7 @@ if id_file and selfie_file:
         file_name="lioratech_verification.json",
         mime="application/json"
     )
+if "error" in result:
+    st.error("🛑 Face match failed. Make sure your image clearly shows a face.")
+else:
+    st.success(f"✅ Match Score: {result['Face Match Score']}%")
