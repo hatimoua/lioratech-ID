@@ -87,3 +87,11 @@ if __name__ == "__main__":
     for k, v in result.items():
         print(f"{k}: {v}")
     print("✅ Saved JSON to verification_result.json and uploaded to S3")
+
+from s3_utils import generate_presigned_url
+
+# After uploading the result to S3
+presigned_url = generate_presigned_url(bucket, result_json_path)
+
+# Add to result dictionary
+result["s3_result_url"] = presigned_url
