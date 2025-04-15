@@ -1,5 +1,4 @@
 import boto3
-import uuid
 import os
 from dotenv import load_dotenv
 
@@ -12,16 +11,15 @@ s3 = boto3.client(
     region_name=os.getenv("AWS_REGION")
 )
 
-def upload_image_to_s3(image_bytes, file_type="jpg", folder="captures"):
-    unique_filename = f"{folder}/{uuid.uuid4()}.{file_type}"
-    bucket = "lioratech-id-captures"
+def upload_to_s3(file_path, bucket, key):
+    with open(file_path, "rb") as f:
+        s3.upload_fileobj(f, bucket, key)
+    print(f"✅ Uploaded to s3://{bucket}/{key}")
+    return f"https://{bucket}.s3.amazonaws.com/{key}"
 
-    s3.put_object(
-        Bucket=bucket,
-        Key=unique_filename,
-        Body=image_bytes,
-        ContentType=f"image/{file_type}",
-        ACL="public-read"  # optional — only if you want the URL to be accessible
+def generate_presigned_url(bucket, key, expiration=3600):
+    return s3.generate_presigned_url(
+        ClientMethod='get_object',
+        Params={'Bucket': bucket, 'Key': key},
+        ExpiresIn=expiration
     )
-
-    return f"https://{bucket}.s3.amazonaws.com/{unique_filename}"
