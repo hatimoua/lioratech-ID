@@ -1,5 +1,8 @@
-streamlit
+echo "
+fastapi
+uvicorn
+python-multipart
 boto3
-pytesseract
-Pillow
 python-dotenv
+Pillow
+" > requirements.txt
