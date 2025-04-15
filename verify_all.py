@@ -4,7 +4,7 @@ import json
 from PIL import Image
 import boto3
 from dotenv import load_dotenv
-from s3_utils import upload_image_to_s3
+from s3_utils import upload_to_s3
 
 load_dotenv()
 
@@ -14,6 +14,9 @@ rekognition = boto3.client(
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
     region_name=os.getenv("AWS_REGION")
 )
+
+BUCKET_NAME = "lioratech-id-captures"
+
 
 def extract_id_fields(image_path):
     with open(image_path, "rb") as image_file:
@@ -35,6 +38,7 @@ def extract_id_fields(image_path):
         "Raw OCR Text": text
     }
 
+
 def compare_faces(source_image_path, target_image_path, threshold=90):
     with open(source_image_path, "rb") as src:
         source_bytes = src.read()
@@ -53,55 +57,33 @@ def compare_faces(source_image_path, target_image_path, threshold=90):
     else:
         return {"match": False, "score": 0}
 
+
 def verify_id_and_face(id_image, selfie_image):
     fields = extract_id_fields(id_image)
     face_result = compare_faces(id_image, selfie_image)
 
     verdict = "PASS" if face_result["score"] >= 90 else "REVIEW" if face_result["score"] >= 80 else "FAIL"
 
-    # Upload to S3 and get URLs
-    with open(id_image, "rb") as f:
-        id_url = upload_image_to_s3(f.read())
-    with open(selfie_image, "rb") as f:
-        selfie_url = upload_image_to_s3(f.read())
-
     result = {
         **fields,
         "Face Match Score": round(face_result["score"], 2),
-        "Verdict": verdict,
-        "ID Image URL": id_url,
-        "Selfie Image URL": selfie_url
+        "Verdict": verdict
     }
 
-    with open("verification_result.json", "w") as f:
+    result_json_path = "verification_result.json"
+    with open(result_json_path, "w") as f:
         json.dump(result, f, indent=4)
 
+    # Upload results to S3
+    upload_to_s3(id_image, BUCKET_NAME, os.path.basename(id_image))
+    upload_to_s3(selfie_image, BUCKET_NAME, os.path.basename(selfie_image))
+    upload_to_s3(result_json_path, BUCKET_NAME, result_json_path)
+
     return result
+
 
 if __name__ == "__main__":
     result = verify_id_and_face("id.jpg", "selfie.jpg")
     for k, v in result.items():
         print(f"{k}: {v}")
-    print("✅ Saved JSON to verification_result.json")
-
-def compare_faces(source_image_path, target_image_path, threshold=90):
-    try:
-        with open(source_image_path, "rb") as src:
-            source_bytes = src.read()
-        with open(target_image_path, "rb") as tgt:
-            target_bytes = tgt.read()
-
-        response = rekognition.compare_faces(
-            SourceImage={'Bytes': source_bytes},
-            TargetImage={'Bytes': target_bytes},
-            SimilarityThreshold=threshold
-        )
-
-        if response['FaceMatches']:
-            similarity = response['FaceMatches'][0]['Similarity']
-            return {"match": True, "score": similarity}
-        else:
-            return {"match": False, "score": 0}
-    
-    except Exception as e:
-        return {"match": False, "score": 0, "error": str(e)}
+    print("✅ Saved JSON to verification_result.json and uploaded to S3")
