@@ -1,0 +1,35 @@
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import JSONResponse
+from verify_all import verify_id_and_face
+import shutil
+import os
+
+app = FastAPI()
+
+@app.post("/verify")
+async def verify_id(
+    id_image: UploadFile = File(...),
+    selfie_image: UploadFile = File(...)
+):
+    # Save uploaded files temporarily
+    id_path = "temp_id.jpg"
+    selfie_path = "temp_selfie.jpg"
+
+    with open(id_path, "wb") as buffer:
+        shutil.copyfileobj(id_image.file, buffer)
+
+    with open(selfie_path, "wb") as buffer:
+        shutil.copyfileobj(selfie_image.file, buffer)
+
+    try:
+        result = verify_id_and_face(id_path, selfie_path)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+    finally:
+        # Clean up files
+        if os.path.exists(id_path):
+            os.remove(id_path)
+        if os.path.exists(selfie_path):
+            os.remove(selfie_path)
+
+    return result
