@@ -35,28 +35,36 @@ if id_file and selfie_file:
         f.write(selfie_file.getbuffer())
 
     with st.spinner("Running verification..."):
-        result = verify_id_and_face("temp_id.jpg", "temp_selfie.jpg")
+        try:
+            result = verify_id_and_face("temp_id.jpg", "temp_selfie.jpg")
 
-    st.markdown("### ✅ Face Match Score")
-    st.success(f"**{result['Face Match Score']}%**")
-    verdict_color = "🟢" if result["Verdict"] == "PASS" else "🟠" if result["Verdict"] == "REVIEW" else "🔴"
-    st.markdown(f"**{verdict_color} VERDICT: {result['Verdict']}**")
+            if "error" in result:
+                st.error("❌ Verification failed: " + result["error"])
+            else:
+                st.markdown("### ✅ Face Match Score")
+                st.success(f"**{result['Face Match Score']}%**")
+                verdict_color = "🟢" if result["Verdict"] == "PASS" else "🟠" if result["Verdict"] == "REVIEW" else "🔴"
+                st.markdown(f"**{verdict_color} VERDICT: {result['Verdict']}**")
 
-    st.markdown("---")
-    st.markdown("### 🧾 Extracted ID Fields")
-    st.write(f"**Name:** {result['Name']}")
-    st.write(f"**Date of Birth:** {result['Date of Birth']}")
-    st.write(f"**ID Number:** {result['ID Number']}")
+                st.markdown("---")
+                st.markdown("### 🧾 Extracted ID Fields")
+                st.write(f"**Name:** {result['Name']}")
+                st.write(f"**Date of Birth:** {result['Date of Birth']}")
+                st.write(f"**ID Number:** {result['ID Number']}")
 
-    st.markdown("---")
-    st.markdown("### 📁 Export JSON")
-    st.download_button(
-        label="📥 Download Result as JSON",
-        data=json.dumps(result, indent=2),
-        file_name="lioratech_verification.json",
-        mime="application/json"
-    )
-if "error" in result:
-    st.error("🛑 Face match failed. Make sure your image clearly shows a face.")
-else:
-    st.success(f"✅ Match Score: {result['Face Match Score']}%")
+                if "ID Image URL" in result:
+                    st.image(result["ID Image URL"], caption="ID Image (S3)", width=200)
+                if "Selfie Image URL" in result:
+                    st.image(result["Selfie Image URL"], caption="Selfie Image (S3)", width=200)
+
+                st.markdown("---")
+                st.markdown("### 📁 Export JSON")
+                st.download_button(
+                    label="📥 Download Result as JSON",
+                    data=json.dumps(result, indent=2),
+                    file_name="lioratech_verification.json",
+                    mime="application/json"
+                )
+
+        except Exception as e:
+            st.error(f"💥 Something went wrong: {e}")
